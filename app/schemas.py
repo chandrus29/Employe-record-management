@@ -5,11 +5,11 @@ from pydantic import BaseModel, EmailStr, Field
 
 
 class EmployeeCreate(BaseModel):
-    name: str = Field(min_length=1)
+    name: str = Field(min_length=1, strip_whitespace=True)
     email: EmailStr
-    department: str = Field(min_length=1)
-    primary_skill: str = Field(min_length=1)
-    location: str = Field(min_length=1)
+    department: str = Field(min_length=1, strip_whitespace=True)
+    primary_skill: str = Field(min_length=1, strip_whitespace=True)
+    location: str = Field(min_length=1, strip_whitespace=True)
     work_mode: Literal["WFH", "WFO"]
 
 
