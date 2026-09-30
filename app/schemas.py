@@ -20,3 +20,9 @@ class EmployeeUpdate(EmployeeCreate):
 class Employee(EmployeeUpdate):
     id: int = Field(gt=0)
     created_at: datetime
+    
+class EmployeeListResponse(BaseModel):
+    total: int
+    limit: int
+    offset: int
+    items: list[Employee]      
