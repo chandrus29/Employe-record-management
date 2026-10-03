@@ -1,26 +1,34 @@
 from typing import Literal
 
-from fastapi import Depends, FastAPI, HTTPException, Query, status
+from fastapi import Depends, FastAPI, HTTPException, Query, Response, status
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app import models, services
-from app.database import Base, engine, get_db
+from app.database import engine, get_db
 from app.schemas import (
     Employee,
     EmployeeCreate,
     EmployeeListResponse,
     EmployeeUpdate,
+    WorkItemCreate,
+    WorkItemListResponse,
+    WorkItemResponse,
+    WorkItemUpdate,
 )
 
-Base.metadata.create_all(bind=engine)
 
 app = FastAPI(title="Employee Management API")
+
+models.Base.metadata.create_all(bind=engine)
 
 
 @app.get("/health")
 def health_check():
     return {"status": "healthy"}
+
+
+# -------------------- Employee APIs --------------------
 
 
 @app.post(
@@ -157,4 +165,132 @@ def delete_employee(
         )
 
     services.delete_employee(db, employee)
+
     return {"message": "Employee deleted successfully"}
+
+
+# -------------------- Work Item APIs --------------------
+
+
+@app.post(
+    "/work-items",
+    response_model=WorkItemResponse,
+    status_code=status.HTTP_201_CREATED,
+)
+def create_work_item(
+    payload: WorkItemCreate,
+    db: Session = Depends(get_db),
+):
+    employee = services.find_employee(db, payload.employee_id)
+
+    if employee is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Assigned employee not found",
+        )
+
+    return services.create_work_item(db, payload)
+
+
+@app.get(
+    "/work-items",
+    response_model=WorkItemListResponse,
+)
+def list_work_items(
+    search: str | None = None,
+    employee_id: int | None = Query(default=None, gt=0),
+    work_item_status: Literal[
+        "TODO",
+        "IN_PROGRESS",
+        "COMPLETED",
+    ] | None = Query(default=None, alias="status"),
+    priority: Literal["LOW", "MEDIUM", "HIGH"] | None = None,
+    limit: int = Query(default=10, ge=1, le=100),
+    offset: int = Query(default=0, ge=0),
+    db: Session = Depends(get_db),
+):
+    total, items = services.get_work_items(
+        db=db,
+        search=search,
+        employee_id=employee_id,
+        status=work_item_status,
+        priority=priority,
+        limit=limit,
+        offset=offset,
+    )
+
+    return {
+        "total": total,
+        "limit": limit,
+        "offset": offset,
+        "items": items,
+    }
+
+
+@app.get(
+    "/work-items/{work_item_id}",
+    response_model=WorkItemResponse,
+)
+def get_work_item(
+    work_item_id: int,
+    db: Session = Depends(get_db),
+):
+    work_item = services.get_work_item(db, work_item_id)
+
+    if work_item is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Work item not found",
+        )
+
+    return work_item
+
+
+@app.put(
+    "/work-items/{work_item_id}",
+    response_model=WorkItemResponse,
+)
+def update_work_item(
+    work_item_id: int,
+    payload: WorkItemUpdate,
+    db: Session = Depends(get_db),
+):
+    work_item = services.get_work_item(db, work_item_id)
+
+    if work_item is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Work item not found",
+        )
+
+    if payload.employee_id is not None:
+        employee = services.find_employee(db, payload.employee_id)
+
+        if employee is None:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Assigned employee not found",
+            )
+
+    return services.update_work_item(db, work_item, payload)
+
+
+@app.delete(
+    "/work-items/{work_item_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+)
+def delete_work_item(
+    work_item_id: int,
+    db: Session = Depends(get_db),
+):
+    work_item = services.get_work_item(db, work_item_id)
+
+    if work_item is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Work item not found",
+        )
+
+    services.delete_work_item(db, work_item)
+
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
