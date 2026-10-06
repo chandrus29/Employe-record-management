@@ -245,15 +245,8 @@ screenshots/
 └── delete-work-item-204.png
 ```
 
-```markdown
-![Create Work Item — 201](screenshots/create-work-item-201.png)
-![Combined Filters — 200](screenshots/combined-filters-200.png)
-![Pagination — 200](screenshots/pagination-200.png)
-![Invalid Employee — 404](screenshots/invalid-employee-404.png)
-![Invalid Status — 422](screenshots/invalid-status-422.png)
-![Update Work Item — 200](screenshots/update-work-item-200.png)
-![Delete Work Item — 204](screenshots/delete-work-item-204.png)
-```
+
+
 
 ## Assumptions
 
