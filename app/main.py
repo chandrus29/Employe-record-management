@@ -164,7 +164,14 @@ def delete_employee(
             detail="Employee not found",
         )
 
-    services.delete_employee(db, employee)
+    try:
+        services.delete_employee(db, employee)
+    except IntegrityError as exc:
+        db.rollback()
+        raise HTTPException(
+            status_code=409,
+            detail="Cannot delete this employee because they have assigned work items.",
+        ) from exc
 
     return {"message": "Employee deleted successfully"}
 

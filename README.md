@@ -39,6 +39,8 @@ This project was completed across Tasks 1, 2, 3, and 4.
    ```bash
    git clone <your-repository-url>
    cd employee-record-management
+   git clone --branch task-4 --single-branch https://github.com/chandrus29/Employe-record-management.git
+cd Employe-record-management
    ```
 
 2. Create and activate a virtual environment.

@@ -112,24 +112,25 @@ def get_employee_by_id(db: Session, employee_id: int):
         .first()
     )
 
-
 def create_work_item(
     db: Session,
     work_item: schemas.WorkItemCreate,
 ):
-    db_work_item = models.WorkItem(**work_item.model_dump())
+    try:
+        db_work_item = models.WorkItem(**work_item.model_dump())
+        db.add(db_work_item)
+        db.commit()
+        db.refresh(db_work_item)
 
-    db.add(db_work_item)
-    db.commit()
-    db.refresh(db_work_item)
-
-    return (
-        db.query(models.WorkItem)
-        .options(joinedload(models.WorkItem.assigned_employee))
-        .filter(models.WorkItem.id == db_work_item.id)
-        .first()
-    )
-
+        return (
+            db.query(models.WorkItem)
+            .options(joinedload(models.WorkItem.assigned_employee))
+            .filter(models.WorkItem.id == db_work_item.id)
+            .first()
+        )
+    except Exception:
+        db.rollback()
+        raise
 
 def get_work_item(db: Session, work_item_id: int):
     return (
@@ -189,20 +190,28 @@ def update_work_item(
     db_work_item: models.WorkItem,
     work_item_update: schemas.WorkItemUpdate,
 ):
-    update_data = work_item_update.model_dump(exclude_unset=True)
+    try:
+        update_data = work_item_update.model_dump(exclude_unset=True)
 
-    for field, value in update_data.items():
-        setattr(db_work_item, field, value)
+        for field, value in update_data.items():
+            setattr(db_work_item, field, value)
 
-    db.commit()
-    db.refresh(db_work_item)
+        db.commit()
+        db.refresh(db_work_item)
 
-    return get_work_item(db, db_work_item.id)
+        return get_work_item(db, db_work_item.id)
+    except Exception:
+        db.rollback()
+        raise
 
 
 def delete_work_item(
     db: Session,
     db_work_item: models.WorkItem,
 ):
-    db.delete(db_work_item)
-    db.commit()
+    try:
+        db.delete(db_work_item)
+        db.commit()
+    except Exception:
+        db.rollback()
+        raise
